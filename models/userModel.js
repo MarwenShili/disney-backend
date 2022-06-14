@@ -12,9 +12,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
     lowercase: true,
-    unique: true,
+    // unique: true,
     required: [true, "please enter your adress"],
     validate: [validator.isEmail, "Please fill a valid email address"],
+  },
+  role: {
+    type: String,
+    default: "user",
+    enum: ["admin", "dev", "student", "user"],
   },
   password: {
     type: String,

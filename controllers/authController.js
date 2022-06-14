@@ -36,16 +36,12 @@ const createSendToken = (user, statusCode, res) => {
 //signup
 exports.signup = async (req, res) => {
   try {
-    //console.log(req.body);
-    const newUser = await User.create(
-      // req.body
-      {
-        name: req.body.name,
-        email: req.body.email,
-        password: req.body.password,
-        passwordConfirm: req.body.passwordConfirm,
-      }
-    );
+    const newUser = await User.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      passwordConfirm: req.body.passwordConfirm,
+    });
     createSendToken(newUser, 201, res);
   } catch (err) {
     res.status(404).json({
@@ -60,7 +56,7 @@ exports.login = async (req, res, next) => {
     //1)check if email and password exist in req.body
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(404).json({
+      return res.status(400).json({
         status: "fail",
         message: "please provide email and password",
       });
