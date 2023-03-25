@@ -21,6 +21,14 @@ const userSchema = new mongoose.Schema({
     default: "user",
     enum: ["admin", "dev", "student", "user"],
   },
+  phone: {
+    type: Number,
+    default: "",
+  },
+  location: {
+    type: String,
+    default: "",
+  },
   password: {
     type: String,
     required: [true, "please enter your adress"],
@@ -47,6 +55,7 @@ userSchema.methods.validatePassword = async function (
 ) {
   return await bcrypt.compare(condidatePassword, userPassword);
 };
+
 // 1) CRYPTAGE WHENE SAVE OR CREATE USER
 userSchema.pre("save", async function save(next) {
   if (!this.isModified("password")) return next();
@@ -59,6 +68,18 @@ userSchema.pre("save", async function save(next) {
     return next(err);
   }
 });
+// 3) changed password
+userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+    console.log(changedTimestamp, JWTTimestamp);
+    return JWTTimestamp < changedTimestamp;
+  }
+  return false;
+};
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

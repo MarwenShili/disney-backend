@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
-
 const User = require("../models/userModel");
+const { promisify } = require("util");
 
 //get token
 const signToken = (id) => {
@@ -39,6 +39,8 @@ exports.signup = async (req, res) => {
     const newUser = await User.create({
       name: req.body.name,
       email: req.body.email,
+      phone: req.body.phone,
+      location: req.body.location,
       password: req.body.password,
       passwordConfirm: req.body.passwordConfirm,
     });
@@ -77,4 +79,72 @@ exports.login = async (req, res, next) => {
       message: err,
     });
   }
+};
+
+//protect routes => authorize just the logged in user
+exports.protect = async (req, res, next) => {
+  // 1)GETTING TOKEN AND CHECK OF IT S THERE
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+  if (!token) {
+    return res.status(401).send({
+      status: "fail",
+      message: "you are note logged in ! please log to get access",
+    });
+
+    // return next(
+    //   new AppError("you are note logged in ! please log to get access", 401)
+    // );
+  }
+  // 2) VERIFICATION TOKEN
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  // 3) IF THE USER STILL EXIST
+  const currentUser = await User.findById(decoded.id);
+  //decoded.id is the id of the user logged in
+  if (!currentUser) {
+    return res.status(401).send({
+      status: "fail",
+      message: "the user belonging to this token does no longer exist",
+    });
+    // return next(
+    //   new AppError(
+    //     "the user belonging to this token does no longer exist ",
+    //     401
+    //   )
+    // );
+  }
+  // 4)CHECK IF THE USER CHANGED PASSWORD AFTER WAS ISSUED
+  if (currentUser.changePasswordAfter(decoded.iat)) {
+    return res.status(401).send({
+      status: "fail",
+      message: "Password Recently changed please login again",
+    });
+    // return next(
+    //   new AppError("Password Recently changed please login again ", 401)
+    // );
+  }
+  // Grand access to protected route
+  req.user = currentUser;
+  next();
+};
+//AUTHORIZATION // admin ...
+//get the current user role from the protect middleware function
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).send({
+        status: "fail",
+        message: "You do not have permission to perform this action",
+      });
+      // return next(
+      //   new AppError("You do not have permission to perform this action", 403)
+      // );
+    }
+    next();
+  };
 };
