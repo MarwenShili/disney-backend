@@ -8,6 +8,8 @@ exports.getMe = (req, res, next) => {
   req.params.id = req.user.id;
   next();
 };
+exports.getAllUsers = factory.findAll(User);
+
 exports.getUserById = factory.findOne(User);
 // update user
 exports.updateUser = factory.updateOne(User);

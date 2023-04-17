@@ -15,6 +15,15 @@ router
     userController.getUserById
   );
 
+//get current user
+router
+  .route("/")
+  .get(
+    authController.protect,
+    authController.restrictTo("admin"),
+    userController.getAllUsers
+  );
+
 //list user by id && update user && soft delete
 router
   .route("/:id")

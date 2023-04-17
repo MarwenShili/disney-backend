@@ -96,10 +96,6 @@ exports.protect = async (req, res, next) => {
       status: "fail",
       message: "you are note logged in ! please log to get access",
     });
-
-    // return next(
-    //   new AppError("you are note logged in ! please log to get access", 401)
-    // );
   }
   // 2) VERIFICATION TOKEN
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
@@ -111,12 +107,6 @@ exports.protect = async (req, res, next) => {
       status: "fail",
       message: "the user belonging to this token does no longer exist",
     });
-    // return next(
-    //   new AppError(
-    //     "the user belonging to this token does no longer exist ",
-    //     401
-    //   )
-    // );
   }
   // 4)CHECK IF THE USER CHANGED PASSWORD AFTER WAS ISSUED
   if (currentUser.changePasswordAfter(decoded.iat)) {
@@ -124,9 +114,6 @@ exports.protect = async (req, res, next) => {
       status: "fail",
       message: "Password Recently changed please login again",
     });
-    // return next(
-    //   new AppError("Password Recently changed please login again ", 401)
-    // );
   }
   // Grand access to protected route
   req.user = currentUser;
@@ -141,9 +128,6 @@ exports.restrictTo = (...roles) => {
         status: "fail",
         message: "You do not have permission to perform this action",
       });
-      // return next(
-      //   new AppError("You do not have permission to perform this action", 403)
-      // );
     }
     next();
   };

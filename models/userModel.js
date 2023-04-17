@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     default: "user",
-    enum: ["admin", "dev", "student", "user"],
+    enum: ["admin", "user"],
   },
   phone: {
     type: Number,
@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema({
   },
   passwordChangedAt: Date,
 });
-//3) validate password
+//1) validate password
 userSchema.methods.validatePassword = async function (
   condidatePassword,
   userPassword
@@ -56,7 +56,7 @@ userSchema.methods.validatePassword = async function (
   return await bcrypt.compare(condidatePassword, userPassword);
 };
 
-// 1) CRYPTAGE WHENE SAVE OR CREATE USER
+// 2) CRYPTAGE WHENE SAVE OR CREATE USER
 userSchema.pre("save", async function save(next) {
   if (!this.isModified("password")) return next();
   try {
