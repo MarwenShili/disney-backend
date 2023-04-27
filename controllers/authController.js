@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const { promisify } = require("util");
+const passport = require("passport");
 
 //get token
 const signToken = (id) => {
@@ -35,6 +36,14 @@ const createSendToken = (user, statusCode, res) => {
 
 //signup
 exports.signup = async (req, res) => {
+  const email = req.body.email;
+  const user = await User.findOne({ email }).select("+password");
+  if (user) {
+    return res.status(404).json({
+      status: "fail",
+      message: "User already exist",
+    });
+  }
   try {
     const newUser = await User.create({
       name: req.body.name,
@@ -66,6 +75,7 @@ exports.login = async (req, res, next) => {
     //2) check if useremail exists && password is correct password exist
     const user = await User.findOne({ email }).select("+password");
     if (!user || !(await user.validatePassword(password, user.password))) {
+      req.user = user;
       return res.status(401).json({
         status: "fail",
         message: "incorrect email or password",
