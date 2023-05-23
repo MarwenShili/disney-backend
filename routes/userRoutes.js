@@ -27,8 +27,8 @@ router
 //list user by id && update user && soft delete
 router
   .route("/:id")
-  .get(authController.protect, userController.getUserById)
-  .put(authController.protect, userController.updateUser)
+  .get(userController.getUserById)
+  .put(userController.updateUser)
   .delete(authController.protect, userController.deleteCurrentUser);
 
 module.exports = router;
