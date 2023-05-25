@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const validator = require("validator");
+const crypto = require("crypto");
+
 const SALT_WORK_FACTOR = 10;
 
 const userSchema = new mongoose.Schema({
@@ -31,7 +33,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, "please enter your adress"],
+    required: [true, "please enter your pwd"],
     minlength: 8,
     select: false,
   },
@@ -47,8 +49,32 @@ const userSchema = new mongoose.Schema({
     },
   },
   passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
 });
-//1) validate password
+
+// 1) CRYPTAGE WHENE SAVE OR CREATE USER
+// userSchema.pre("save", async function save(next) {
+//   if (!this.isModified("password")) return next();
+//   try {
+//     const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
+//     this.password = await bcrypt.hash(this.password, salt);
+//     this.passwordConfirm = undefined;
+//     return next();
+//   } catch (err) {
+//     return next(err);
+//   }
+// });
+
+// 2) update the passwordChangedAt whene we have chaging of password
+userSchema.pre("save", function (next) {
+  if (!this.isModified("password") || this.isNew) return next();
+
+  this.passwordChangedAt = Date.now() - 1000;
+  next();
+});
+
+//3) validate password
 userSchema.methods.validatePassword = async function (
   condidatePassword,
   userPassword
@@ -56,19 +82,7 @@ userSchema.methods.validatePassword = async function (
   return await bcrypt.compare(condidatePassword, userPassword);
 };
 
-// 2) CRYPTAGE WHENE SAVE OR CREATE USER
-userSchema.pre("save", async function save(next) {
-  if (!this.isModified("password")) return next();
-  try {
-    const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
-    this.password = await bcrypt.hash(this.password, salt);
-    // this.passwordConfirm = undefined;
-    return next();
-  } catch (err) {
-    return next(err);
-  }
-});
-// 3) changed password
+// 4) changed password
 userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
     const changedTimestamp = parseInt(
@@ -79,6 +93,30 @@ userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
     return JWTTimestamp < changedTimestamp;
   }
   return false;
+};
+
+// 5) CREATE PASSWORD WHEN FORGOT
+userSchema.methods.createPasswordResetToken = function () {
+  //this token was sended to the user
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  console.log({ resetToken }, this.passwordResetToken);
+
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // ms
+
+  return resetToken;
+};
+
+// 6)  update password
+userSchema.methods.correctPassword = async function (
+  candidatePassword,
+  userPassword
+) {
+  return await bcrypt.compare(candidatePassword, userPassword);
 };
 
 const User = mongoose.model("User", userSchema);
